@@ -18,7 +18,6 @@ pipenv shell
 ```
 ## 5. Set Flask environment variables
 ```bash
-cd server
 export FLASK_APP=app.py
 export FLASK_RUN_PORT=5555
 ```
@@ -27,7 +26,6 @@ export FLASK_RUN_PORT=5555
 flask db init
 flask db migrate -m "Initial migrate"
 flask db upgrade head
-python seed.py
 ```
 ## 7. Run the server
 ```bash
