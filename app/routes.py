@@ -26,6 +26,8 @@ class Signup(Resource):
             is_admin=is_admin
         )
         new_user.password = data['password']
+        if new_user.is_retailer:
+            new_user.retailer = Retailer(name=data['username'], user=new_user, approved=False)
         db.session.add(new_user)
         db.session.commit()
         return new_user.to_dict(), 201
@@ -46,7 +48,7 @@ class Logout(Resource):
         session.pop('user_id', None)
         session.pop('is_retailer', None)
         session.pop('is_admin', None)
-        return {}, 204
+        return '', 204
 
 class CheckSession(Resource):
     def get(self):
@@ -54,8 +56,14 @@ class CheckSession(Resource):
         if user_id:
             user = User.query.get(user_id)
             if user:
-                return user.to_dict(), 200
+                return {
+                    'id': user.id,
+                    'username': user.username,
+                    'is_retailer': user.is_retailer,
+                    'is_admin': user.is_admin
+                }, 200
         return {}, 204
+
 
 class ClearSession(Resource):
     def delete(self):
@@ -338,6 +346,7 @@ class RetailerDashboard(Resource):
             'messages': [message.to_dict() for message in messages]
         }, 200
 
+
 # Dashboard for Users
 class UserDashboard(Resource):
     def get(self):
@@ -358,6 +367,27 @@ class UserDashboard(Resource):
             'messages': [message.to_dict() for message in messages],
             'search_history': [history.to_dict() for history in search_history]
         }, 200
+    
+class ApproveRetailer(Resource):
+    def post(self, retailer_id):
+        user_id = session.get('user_id')
+        if not user_id:
+            return {'error': 'Unauthorized'}, 401
+
+        user = User.query.get(user_id)
+        if not user.is_admin:
+            return {'error': 'Only admins can access this'}, 403
+
+        retailer = Retailer.query.get(retailer_id)
+        if not retailer:
+            return {'error': 'Retailer not found'}, 404
+
+        retailer.approved = True
+        db.session.commit()
+        return retailer.to_dict(), 200
+
+
+
 
 # Register resources with the API
 api.add_resource(Signup, '/signup')
@@ -375,6 +405,7 @@ api.add_resource(MessageResource, '/messages', '/messages/<int:message_id>')
 api.add_resource(AdminDashboard, '/admin_dashboard', '/admin_dashboard/<int:retailer_id>')
 api.add_resource(RetailerDashboard, '/retailer_dashboard')
 api.add_resource(UserDashboard, '/user_dashboard')
+api.add_resource(ApproveRetailer, '/approve_retailer/<int:retailer_id>')
 
 @main.route('/')
 def index():
