@@ -1,7 +1,6 @@
-# app/__init__.py
 from flask import Flask
 from flask_migrate import Migrate
-from flask_cors import CORS  
+from flask_cors import CORS
 from .models import db
 from .config import Config
 
@@ -9,7 +8,7 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    CORS(app, supports_credentials=True)  
+    CORS(app, supports_credentials=True)
 
     db.init_app(app)
     migrate = Migrate(app, db)

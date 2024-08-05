@@ -1,4 +1,3 @@
-# models.py
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy_serializer import SerializerMixin
 from datetime import datetime
@@ -14,8 +13,8 @@ class User(db.Model, SerializerMixin):
     password_hash = db.Column(db.String, nullable=False)
     is_retailer = db.Column(db.Boolean, default=False)
     is_admin = db.Column(db.Boolean, default=False)
-    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
     feedbacks = db.relationship('Feedback', back_populates='user', cascade='all, delete-orphan')
     wishlists = db.relationship('Wishlist', back_populates='user', cascade='all, delete-orphan')
     messages_sent = db.relationship('Message', foreign_keys='Message.sender_id', back_populates='sender', cascade='all, delete-orphan')
@@ -42,8 +41,8 @@ class Retailer(db.Model, SerializerMixin):
     name = db.Column(db.String, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     whatsapp_number = db.Column(db.String)
-    
     approved = db.Column(db.Boolean, default=False)
+    
     user = db.relationship('User', back_populates='retailer')
     products = db.relationship('Product', back_populates='retailer', cascade='all, delete-orphan')
     messages = db.relationship('Message', foreign_keys='Message.retailer_id', back_populates='retailer', cascade='all, delete-orphan')
@@ -67,8 +66,8 @@ class Product(db.Model, SerializerMixin):
     retailer_id = db.Column(db.Integer, db.ForeignKey('retailers.id'), nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
     image_url = db.Column(db.String)
+    
     feedbacks = db.relationship('Feedback', back_populates='product', cascade='all, delete-orphan')
     messages = db.relationship('Message', foreign_keys='Message.product_id', back_populates='product', cascade='all, delete-orphan')
     wishlists = db.relationship('Wishlist', back_populates='product', cascade='all, delete-orphan')
@@ -83,8 +82,8 @@ class Feedback(db.Model, SerializerMixin):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
     comment = db.Column(db.String)
-    
     feedback_date = db.Column(db.DateTime, default=datetime.utcnow)
+    
     user = db.relationship('User', back_populates='feedbacks')
     product = db.relationship('Product', back_populates='feedbacks')
 
@@ -94,6 +93,7 @@ class UserHistory(db.Model, SerializerMixin):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     search_term = db.Column(db.String)
     searched_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
     user = db.relationship('User', back_populates='search_history')
 
 class Message(db.Model, SerializerMixin):
@@ -105,7 +105,7 @@ class Message(db.Model, SerializerMixin):
     retailer_id = db.Column(db.Integer, db.ForeignKey('retailers.id'), nullable=True)
     content = db.Column(db.String)
     sent_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
+   
     sender = db.relationship('User', foreign_keys=[sender_id], back_populates='messages_sent')
     receiver = db.relationship('User', foreign_keys=[receiver_id], back_populates='messages_received')
     product = db.relationship('Product', back_populates='messages')
@@ -117,6 +117,6 @@ class Wishlist(db.Model, SerializerMixin):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
     added_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
+   
     user = db.relationship('User', back_populates='wishlists')
     product = db.relationship('Product', back_populates='wishlists')

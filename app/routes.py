@@ -1,22 +1,29 @@
-# routes.py
 from flask import Blueprint, request, session, jsonify
 from flask_restful import Api, Resource
 from flask_cors import CORS
 from datetime import datetime
 from .models import db, User, Retailer, Category, Product, Feedback, UserHistory, Message, Wishlist
+import os
 
 main = Blueprint('main', __name__)
 api = Api(main)
+
+admin_emails = {
+    os.getenv('ADMIN_EMAIL_1'),
+    os.getenv('ADMIN_EMAIL_2'),
+    os.getenv('ADMIN_EMAIL_3')
+}
 
 # Authentication and User Management
 class Signup(Resource):
     def post(self):
         data = request.get_json()
+        is_admin = data['email'] in admin_emails
         new_user = User(
             username=data['username'],
             email=data['email'],
             is_retailer=data.get('is_retailer', False),
-            is_admin=data.get('is_admin', False)
+            is_admin=is_admin
         )
         new_user.password = data['password']
         db.session.add(new_user)
@@ -54,6 +61,7 @@ class ClearSession(Resource):
     def delete(self):
         session.clear()
         return {}, 204
+
 
 # User Resource
 class UserResource(Resource):
@@ -145,7 +153,7 @@ class ProductResource(Resource):
             description=data['description'],
             delivery_cost=data['delivery_cost'],
             payment_mode=data['payment_mode'],
-            retailer_id=user.id,  # Use the logged-in user's ID
+            retailer_id=user.id, 
             category_id=data['category_id'],
             image_url=data['image_url']
         )
