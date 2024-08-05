@@ -21,7 +21,7 @@ pipenv shell
 export FLASK_APP=run.py
 export FLASK_RUN_PORT=5555
 ```
-## 6. Set up and seed the database
+## 6. Set up the database
 ```bash
 flask db init
 flask db migrate -m "Initial migrate"
