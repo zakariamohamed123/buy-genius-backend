@@ -18,7 +18,7 @@ pipenv shell
 ```
 ## 5. Set Flask environment variables
 ```bash
-export FLASK_APP=run.py
+export FLASK_APP=app.py
 export FLASK_RUN_PORT=5555
 ```
 ## 6. Set up the database
