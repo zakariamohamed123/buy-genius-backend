@@ -2,13 +2,16 @@ from flask import Blueprint, request, session, jsonify
 from flask_restful import Api, Resource
 from flask_cors import CORS
 from datetime import datetime
-from .models import db, User, Retailer, Category, Product, Feedback, UserHistory, Message, Wishlist, Notification
+from .models import db, User, Retailer, Category, Product, Feedback, UserHistory, Message, Wishlist, Notification, SearchHistory
 import os
 from sqlalchemy.exc import IntegrityError
+from functools import wraps
 
+# Initialize Blueprint and API
 main = Blueprint('main', __name__)
 api = Api(main)
 
+# List of admin emails for authorization
 admin_emails = {
     os.getenv('ADMIN_EMAIL_1'),
     os.getenv('ADMIN_EMAIL_2'),
@@ -16,7 +19,24 @@ admin_emails = {
     os.getenv('ADMIN_EMAIL_4')
 }
 
+# Decorator to check if a token is required
+def token_required(f):
+    @wraps(f)
+    def decorator(*args, **kwargs):
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'Unauthorized'}), 401
+        
+        return f(*args, **kwargs)
+
+    return decorator
+
 # Authentication and User Management
+
 class Signup(Resource):
     def post(self):
         data = request.get_json()
@@ -112,33 +132,41 @@ class ClearSession(Resource):
 
 # User Resource
 class UserResource(Resource):
-    def get(self):
-        role = request.args.get('role')
-        status = request.args.get('status')
-        search = request.args.get('search')
+    @token_required
+    def get(self, user_id=None):
+        if user_id:
+            user = User.query.get(user_id)
+            if user:
+                return user.to_dict(), 200
+            return {'error': 'User not found'}, 404
+        else:
+            role = request.args.get('role')
+            status = request.args.get('status')
+            search = request.args.get('search')
 
-        query = User.query
+            query = User.query
 
-        if role:
-            if role == "Admin":
-                query = query.filter_by(is_admin=True)
-            elif role == "Retailer":
-                query = query.filter_by(is_retailer=True)
-            else:
-                query = query.filter_by(is_admin=False, is_retailer=False)
+            if role:
+                if role == "Admin":
+                    query = query.filter_by(is_admin=True)
+                elif role == "Retailer":
+                    query = query.filter_by(is_retailer=True)
+                else:
+                    query = query.filter_by(is_admin=False, is_retailer=False)
 
-        if status:
-            query = query.filter_by(status=status)
+            if status:
+                query = query.filter_by(status=status)
 
-        if search:
-            query = query.filter(
-                (User.username.ilike(f'%{search}%')) | 
-                (User.email.ilike(f'%{search}%'))
-            )
+            if search:
+                query = query.filter(
+                    (User.username.ilike(f'%{search}%')) |
+                    (User.email.ilike(f'%{search}%'))
+                )
 
-        users = query.all()
-        return [user.to_dict() for user in users], 200
+            users = query.all()
+            return [user.to_dict() for user in users], 200
 
+    @token_required
     def put(self, user_id):
         data = request.get_json()
         user = User.query.get(user_id)
@@ -153,6 +181,25 @@ class UserResource(Resource):
             return user.to_dict(), 200
         return {'error': 'User not found'}, 404
 
+    @token_required
+    def patch(self, user_id):
+        data = request.get_json()
+        user = User.query.get(user_id)
+        if user:
+            if 'approved' in data:
+                if not user.is_admin:
+                    retailer = Retailer.query.filter_by(user_id=user_id).first()
+                    if retailer:
+                        retailer.approved = data['approved']
+                        db.session.commit()
+                        return retailer.to_dict(), 200
+                    return {'error': 'Retailer not found'}, 404
+                else:
+                    return {'error': 'Admin users cannot change approval status'}, 403
+            return {'error': 'No fields to update'}, 400
+        return {'error': 'User not found'}, 404
+
+    @token_required
     def delete(self, user_id):
         user = User.query.get(user_id)
         if user:
@@ -164,9 +211,9 @@ class UserResource(Resource):
             return {'message': 'User deleted successfully'}, 200
         return {'error': 'User not found'}, 404
 
-
 # Retailer Resource
 class RetailerResource(Resource):
+    @token_required
     def get(self, retailer_id=None):
         if retailer_id:
             retailer = Retailer.query.get(retailer_id)
@@ -176,6 +223,7 @@ class RetailerResource(Resource):
         retailers = Retailer.query.all()
         return [retailer.to_dict() for retailer in retailers], 200
 
+    @token_required
     def post(self):
         data = request.get_json()
         new_retailer = Retailer(
@@ -189,6 +237,7 @@ class RetailerResource(Resource):
 
 # Category Resource
 class CategoryResource(Resource):
+    @token_required
     def get(self, category_id=None):
         if category_id:
             category = Category.query.get(category_id)
@@ -198,6 +247,7 @@ class CategoryResource(Resource):
         categories = Category.query.all()
         return [category.to_dict() for category in categories], 200
 
+    @token_required
     def post(self):
         data = request.get_json()
         new_category = Category(name=data['name'])
@@ -207,6 +257,7 @@ class CategoryResource(Resource):
 
 # Product Resource
 class ProductResource(Resource):
+    @token_required
     def get(self, product_id=None):
         if product_id:
             product = Product.query.get(product_id)
@@ -216,6 +267,7 @@ class ProductResource(Resource):
         products = Product.query.all()
         return [product.to_dict() for product in products], 200
 
+    @token_required
     def post(self):
         user_id = session.get('user_id')
         if not user_id:
@@ -223,60 +275,23 @@ class ProductResource(Resource):
 
         user = User.query.get(user_id)
         if not user.is_retailer:
-            return {'error': 'Only retailers can post products'}, 403
+            return {'error': 'Only retailers can add products'}, 403
 
         data = request.get_json()
         new_product = Product(
             name=data['name'],
-            price=data['price'],
             description=data['description'],
-            delivery_cost=data['delivery_cost'],
-            payment_mode=data['payment_mode'],
+            price=data['price'],
             retailer_id=user.retailer.id,
-            category_id=data['category_id'],
-            image_url=data['image_url']
+            category_id=data['category_id']
         )
         db.session.add(new_product)
         db.session.commit()
         return new_product.to_dict(), 201
 
-    def put(self, product_id):
-        user_id = session.get('user_id')
-        if not user_id:
-            return {'error': 'Unauthorized'}, 401
-
-        user = User.query.get(user_id)
-        product = Product.query.get(product_id)
-        if not product or product.retailer_id != user.retailer.id:
-            return {'error': 'Only the retailer who posted the product can update it'}, 403
-
-        data = request.get_json()
-        product.name = data['name']
-        product.price = data['price']
-        product.description = data['description']
-        product.delivery_cost = data['delivery_cost']
-        product.payment_mode = data['payment_mode']
-        product.category_id = data['category_id']
-        product.image_url = data['image_url']
-        db.session.commit()
-        return product.to_dict(), 200
-
-    def delete(self, product_id):
-        user_id = session.get('user_id')
-        if not user_id:
-            return {'error': 'Unauthorized'}, 401
-
-        user = User.query.get(user_id)
-        product = Product.query.get(product_id)
-        if not product or product.retailer_id != user.retailer.id:
-            return {'error': 'Only the retailer who posted the product can delete it'}, 403
-
-        db.session.delete(product)
-        db.session.commit()
-        return {}, 204
-
 # Feedback Resource
 class FeedbackResource(Resource):
+    @token_required
     def get(self, feedback_id=None):
         if feedback_id:
             feedback = Feedback.query.get(feedback_id)
@@ -286,45 +301,18 @@ class FeedbackResource(Resource):
         feedbacks = Feedback.query.all()
         return [feedback.to_dict() for feedback in feedbacks], 200
 
+    @token_required
     def post(self):
-        user_id = session.get('user_id')
-        if not user_id:
-            return {'error': 'Unauthorized'}, 401
-
         data = request.get_json()
         new_feedback = Feedback(
-            user_id=user_id,
+            user_id=session.get('user_id'),
             product_id=data['product_id'],
+            rating=data['rating'],
             comment=data['comment']
         )
         db.session.add(new_feedback)
         db.session.commit()
         return new_feedback.to_dict(), 201
-
-# Wishlist Resource
-class WishlistResource(Resource):
-    def get(self, wishlist_id=None):
-        if wishlist_id:
-            wishlist = Wishlist.query.get(wishlist_id)
-            if wishlist:
-                return wishlist.to_dict(), 200
-            return {'error': 'Wishlist item not found'}, 404
-        wishlists = Wishlist.query.all()
-        return [wishlist.to_dict() for wishlist in wishlists], 200
-
-    def post(self):
-        user_id = session.get('user_id')
-        if not user_id:
-            return {'error': 'Unauthorized'}, 401
-
-        data = request.get_json()
-        new_wishlist_item = Wishlist(
-            user_id=user_id,
-            product_id=data['product_id']
-        )
-        db.session.add(new_wishlist_item)
-        db.session.commit()
-        return new_wishlist_item.to_dict(), 201
 
 # Message Resource
 class MessageResource(Resource):
@@ -338,222 +326,142 @@ class MessageResource(Resource):
         return [message.to_dict() for message in messages], 200
 
     def post(self):
-        user_id = session.get('user_id')
-        if not user_id:
-            return {'error': 'Unauthorized'}, 401
-
         data = request.get_json()
         new_message = Message(
-            sender_id=user_id,
-            receiver_id=data['receiver_id'],
-            product_id=data.get('product_id'),
-            retailer_id=data.get('retailer_id'),
+            sender_id=data['sender_id'],
+            recipient_id=data['recipient_id'],
             content=data['content']
         )
         db.session.add(new_message)
         db.session.commit()
         return new_message.to_dict(), 201
 
-# Dashboard for Admin
-class AdminDashboard(Resource):
+# Wishlist Resource
+class WishlistResource(Resource):
+    @token_required
     def get(self):
         user_id = session.get('user_id')
-        if not user_id:
-            return {'error': 'Unauthorized'}, 401
+        wishlist_items = Wishlist.query.filter_by(user_id=user_id).all()
+        return [item.to_dict() for item in wishlist_items], 200
 
-        user = User.query.get(user_id)
-        if not user.is_admin:
-            return {'error': 'Only admins can access this'}, 403
-
-        retailers = Retailer.query.filter_by(approved=False).all()
-        users = User.query.all()
-        products = Product.query.all()
-        analytics = {
-            'total_users': len(users),
-            'total_retailers': len(retailers),
-            'total_products': len(products)
-        }
-
-        return {
-            'retailers': [retailer.to_dict() for retailer in retailers],
-            'users': [user.to_dict() for user in users],
-            'products': [product.to_dict() for product in products],
-            'analytics': analytics
-        }, 200
-
-    def post(self, retailer_id):
-        user_id = session.get('user_id')
-        if not user_id:
-            return {'error': 'Unauthorized'}, 401
-
-        user = User.query.get(user_id)
-        if not user.is_admin:
-            return {'error': 'Only admins can access this'}, 403
-
-        retailer = Retailer.query.get(retailer_id)
-        if not retailer:
-            return {'error': 'Retailer not found'}, 404
-
-        retailer.approved = True
+    @token_required
+    def post(self):
+        data = request.get_json()
+        new_wishlist_item = Wishlist(
+            user_id=session.get('user_id'),
+            product_id=data['product_id']
+        )
+        db.session.add(new_wishlist_item)
         db.session.commit()
-        return retailer.to_dict(), 200
-
-# Dashboard for Retailers
-class RetailerDashboard(Resource):
-    def get(self):
-        user_id = session.get('user_id')
-        if not user_id:
-            return {'error': 'Unauthorized'}, 401
-
-        user = User.query.get(user_id)
-        if not user.is_retailer:
-            return {'error': 'Only retailers can access this'}, 403
-
-        products = Product.query.filter_by(retailer_id=user.retailer.id).all()
-        messages = Message.query.filter_by(retailer_id=user.retailer.id).all()
-
-        return {
-            'products': [product.to_dict() for product in products],
-            'messages': [message.to_dict() for message in messages]
-        }, 200
-
-# Dashboard for Users
-class UserDashboard(Resource):
-    def get(self):
-        user_id = session.get('user_id')
-        if not user_id:
-            return {'error': 'Unauthorized'}, 401
-
-        user = User.query.get(user_id)
-        wishlists = Wishlist.query.filter_by(user_id=user.id).all()
-        feedbacks = Feedback.query.filter_by(user_id=user.id).all()
-        messages = Message.query.filter_by(sender_id=user.id).all()
-        search_history = UserHistory.query.filter_by(user_id=user.id).all()
-
-        return {
-            'user': user.to_dict(),
-            'wishlists': [wishlist.to_dict() for wishlist in wishlists],
-            'feedbacks': [feedback.to_dict() for feedback in feedbacks],
-            'messages': [message.to_dict() for message in messages],
-            'search_history': [history.to_dict() for history in search_history]
-        }, 200
-
-class ApproveRetailer(Resource):
-    def post(self, retailer_id):
-        user_id = session.get('user_id')
-        if not user_id:
-            return {'error': 'Unauthorized'}, 401
-
-        user = User.query.get(user_id)
-        if not user.is_admin:
-            return {'error': 'Only admins can access this'}, 403
-
-        retailer = Retailer.query.get(retailer_id)
-        if not retailer:
-            return {'error': 'Retailer not found'}, 404
-
-        retailer.approved = True
-        db.session.commit()
-        return retailer.to_dict(), 200
+        return new_wishlist_item.to_dict(), 201
 
 # Notification Resource
 class NotificationResource(Resource):
-    def get(self, notification_id=None):
-        if notification_id:
-            notification = Notification.query.get(notification_id)
-            if notification:
-                return notification.to_dict(), 200
-            return {'error': 'Notification not found'}, 404
-        notifications = Notification.query.all()
+    @token_required
+    def get(self):
+        user_id = session.get('user_id')
+        notifications = Notification.query.filter_by(user_id=user_id).all()
         return [notification.to_dict() for notification in notifications], 200
 
+    @token_required
     def post(self):
         data = request.get_json()
         new_notification = Notification(
-            message=data['message'],
-            retailer_id=data.get('retailer_id')
+            user_id=session.get('user_id'),
+            message=data['message']
         )
         db.session.add(new_notification)
         db.session.commit()
         return new_notification.to_dict(), 201
-    
-class RejectRetailer(Resource):
-    def post(self, retailer_id):
-        user_id = session.get('user_id')
-        if not user_id:
-            return {'error': 'Unauthorized'}, 401
+# Retailer Dashboard Resource
+class RetailerDashboard(Resource):
+    def get(self):
+        # Ensure the user is authenticated and is a retailer
+        if 'user_id' not in session or not session.get('is_retailer'):
+            return {'error': 'Unauthorized access'}, 403
 
+        # Retrieve and return retailer-specific data
+        user_id = session.get('user_id')
+        retailer = Retailer.query.filter_by(user_id=user_id).first()
+        if retailer:
+            return retailer.to_dict(), 200
+        return {'error': 'Retailer not found'}, 404
+
+# User Dashboard Resource
+class UserDashboard(Resource):
+    def get(self):
+        # Ensure the user is authenticated
+        if 'user_id' not in session:
+            return {'error': 'Unauthorized access'}, 403
+
+        # Retrieve and return user-specific data
+        user_id = session.get('user_id')
         user = User.query.get(user_id)
-        if not user.is_admin:
-            return {'error': 'Only admins can access this'}, 403
+        if user:
+            return user.to_dict(), 200
+        return {'error': 'User not found'}, 404
+
+# Approve Retailer Resource
+class ApproveRetailer(Resource):
+    def post(self, retailer_id):
+        # Ensure the user is authenticated and is an admin
+        if 'user_id' not in session or not session.get('is_admin'):
+            return {'error': 'Unauthorized access'}, 403
 
         retailer = Retailer.query.get(retailer_id)
-        if not retailer:
-            return {'error': 'Retailer not found'}, 404
+        if retailer:
+            retailer.approved = True
+            db.session.commit()
+            return {'message': 'Retailer approved successfully'}, 200
+        return {'error': 'Retailer not found'}, 404
 
-        
-        db.session.delete(retailer)
-        db.session.commit()
+# Reject Retailer Resource
+class RejectRetailer(Resource):
+    def post(self, retailer_id):
+        # Ensure the user is authenticated and is an admin
+        if 'user_id' not in session or not session.get('is_admin'):
+            return {'error': 'Unauthorized access'}, 403
 
-        return {'message': 'Retailer application rejected'}, 200    
+        retailer = Retailer.query.get(retailer_id)
+        if retailer:
+            db.session.delete(retailer)
+            db.session.commit()
+            return {'message': 'Retailer rejected and removed successfully'}, 200
+        return {'error': 'Retailer not found'}, 404
 
+# Search Products Resource
 class SearchProductsResource(Resource):
     def get(self, query):
-        products = Product.query.filter(Product.name.ilike(f"%{query}%")).all()
-        if not products:
-            return {'error': 'No products found'}, 404
-        
-        products_with_ratios = []
-        for product in products:
-            try:
-                cb_ratio = product.calculate_cost_benefit() or 0 
-                mb_ratio = product.calculate_marginal_benefit() or 0  
-            except Exception as e:
-                return {'error': f'Error calculating ratios: {str(e)}'}, 500
+        # Perform search based on query string
+        products = Product.query.filter(Product.name.ilike(f'%{query}%')).all()
+        return [product.to_dict() for product in products], 200
 
-            products_with_ratios.append({
-                'product_id': product.id,
-                'name': product.name,
-                'price': product.price,
-                'description': product.description,
-                'cost_benefit_ratio': cb_ratio,
-                'marginal_benefit_ratio': mb_ratio,
-            })
-        
-        # Sort by combined ratios
-        products_with_ratios.sort(key=lambda p: (p['cost_benefit_ratio'] + p['marginal_benefit_ratio']), reverse=True)
-        
-        # Mark the top product as recommended
-        if products_with_ratios:
-            products_with_ratios[0]['recommended'] = True
-        
-        return {'products': products_with_ratios}, 200
-
+# Search History Resource
 class SearchHistoryResource(Resource):
-    def post(self):
-        user_id = session.get('user_id')
-        if not user_id:
-            return {'error': 'Unauthorized'}, 401
-
-        data = request.get_json()
-        search_term = data.get('search_term')
-
-        if not search_term:
-            return {'error': 'Search term is required'}, 400
-
-        new_history = UserHistory(user_id=user_id, search_term=search_term)
-        db.session.add(new_history)
-        db.session.commit()
-
-        return new_history.to_dict(), 201
-
     def get(self):
-        user_id = session.get('user_id')
-        if not user_id:
-            return {'error': 'Unauthorized'}, 401
+        # Ensure the user is authenticated
+        if 'user_id' not in session:
+            return {'error': 'Unauthorized access'}, 403
 
-        search_history = UserHistory.query.filter_by(user_id=user_id).order_by(UserHistory.searched_at.desc()).all()
-        return [history.to_dict() for history in search_history], 200
+        # Retrieve and return search history for the authenticated user
+        user_id = session.get('user_id')
+        search_history = SearchHistory.query.filter_by(user_id=user_id).all()
+        return [item.to_dict() for item in search_history], 200
+class AdminDashboard(Resource):
+    def get(self):
+        # Ensure the user is authenticated and is an admin
+        if 'user_id' not in session or not session.get('is_admin'):
+            return {'error': 'Unauthorized access'}, 403
+
+        # Retrieve and return admin-specific data
+        admins = User.query.filter_by(role='admin').all()
+        retailers = Retailer.query.all()
+        users = User.query.all()
+        return {
+            'admins': [admin.to_dict() for admin in admins],
+            'retailers': [retailer.to_dict() for retailer in retailers],
+            'users': [user.to_dict() for user in users]
+        }, 200
 
 # Register resources with the API
 api.add_resource(Signup, '/signup')

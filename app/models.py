@@ -14,6 +14,8 @@ class User(db.Model, SerializerMixin):
     is_retailer = db.Column(db.Boolean, default=False)
     is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    #image_url = db.Column(db.String)  # New field for profile image URL
+    #bio = db.Column(db.String)  # Example of additional profile information
 
     feedbacks = db.relationship('Feedback', back_populates='user', cascade='all, delete-orphan')
     wishlists = db.relationship('Wishlist', back_populates='user', cascade='all, delete-orphan')
@@ -42,7 +44,7 @@ class User(db.Model, SerializerMixin):
             'email': self.email,
             'is_retailer': self.is_retailer,
             'is_admin': self.is_admin,
-            'created_at': self.created_at.isoformat()
+            'created_at': self.created_at.isoformat(),
         }
 
 class Retailer(db.Model, SerializerMixin):

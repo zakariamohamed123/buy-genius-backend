@@ -1,7 +1,7 @@
-from flask import Flask, session
+from flask import Flask
 from flask_migrate import Migrate
 from flask_cors import CORS
-from flask_session import Session
+from flask_socketio import SocketIO
 from .models import db
 from .config import Config
 
@@ -9,22 +9,22 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # Configure session management
-    app.config['SESSION_TYPE'] = 'filesystem'
-    app.config['SECRET_KEY'] = app.config.get('SECRET_KEY', 'default_secret_key')  
-    Session(app)
-
-    # Enable CORS
+    # Initialize CORS
     CORS(app, supports_credentials=True)
 
-    # Initialize extensions
+    # Initialize SQLAlchemy
     db.init_app(app)
     migrate = Migrate(app, db)
+    
+    # Initialize SocketIO
+    socketio = SocketIO(app, cors_allowed_origins="*")
 
-    # Create tables and register blueprints
     with app.app_context():
+        # Register Blueprints
         from .routes import main as main_blueprint
         app.register_blueprint(main_blueprint)
+
+        # Create all database tables (if needed)
         db.create_all()
 
-    return app
+    return app, socketio
