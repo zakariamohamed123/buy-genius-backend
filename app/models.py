@@ -92,8 +92,8 @@ class Product(db.Model, SerializerMixin):
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     image_url = db.Column(db.String)
-    estimated_value = db.Column(db.Float)  # Ensure this field is present
-    marginal_benefit = db.Column(db.Float)  # Ensure this field is present
+    estimated_value = db.Column(db.Float)  
+    marginal_benefit = db.Column(db.Float)  
     
     feedbacks = db.relationship('Feedback', back_populates='product', cascade='all, delete-orphan')
     messages = db.relationship('Message', foreign_keys='Message.product_id', back_populates='product', cascade='all, delete-orphan')
@@ -206,7 +206,7 @@ class Wishlist(db.Model, SerializerMixin):
         return {
             'id': self.id,
             'user_id': self.user_id,
-            'product': self.product.to_dict(),  # Ensure product details are included here
+            'product': self.product.to_dict(),  
             'added_at': self.added_at.isoformat()
         }
 

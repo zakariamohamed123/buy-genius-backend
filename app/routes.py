@@ -565,10 +565,10 @@ class SearchProductsResource(Resource):
                 'marginal_benefit_ratio': mb_ratio,
             })
         
-        # Sort by combined ratios
+        
         products_with_ratios.sort(key=lambda p: (p['cost_benefit_ratio'] + p['marginal_benefit_ratio']), reverse=True)
         
-        # Mark the top product as recommended
+        
         if products_with_ratios:
             products_with_ratios[0]['recommended'] = True
         
