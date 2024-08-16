@@ -172,8 +172,8 @@ class Message(db.Model, SerializerMixin):
     receiver_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=True)
     retailer_id = db.Column(db.Integer, db.ForeignKey('retailers.id'), nullable=True)
-    content = db.Column(db.String)
-    sent_at = db.Column(db.DateTime, default=datetime.utcnow)
+    content = db.Column(db.String, nullable=False)
+    sent_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
    
     sender = db.relationship('User', foreign_keys=[sender_id], back_populates='messages_sent')
     receiver = db.relationship('User', foreign_keys=[receiver_id], back_populates='messages_received')
@@ -188,8 +188,9 @@ class Message(db.Model, SerializerMixin):
             'product_id': self.product_id,
             'retailer_id': self.retailer_id,
             'content': self.content,
-            'sent_at': self.sent_at.isoformat()
+            'sent_at': self.sent_at.isoformat() if self.sent_at else None
         }
+
 
 class Wishlist(db.Model, SerializerMixin):
     __tablename__ = 'wishlists'
@@ -197,7 +198,7 @@ class Wishlist(db.Model, SerializerMixin):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
     added_at = db.Column(db.DateTime, default=datetime.utcnow)
-   
+
     user = db.relationship('User', back_populates='wishlists')
     product = db.relationship('Product', back_populates='wishlists')
 
@@ -205,7 +206,7 @@ class Wishlist(db.Model, SerializerMixin):
         return {
             'id': self.id,
             'user_id': self.user_id,
-            'product_id': self.product_id,
+            'product': self.product.to_dict(),  # Ensure product details are included here
             'added_at': self.added_at.isoformat()
         }
 
