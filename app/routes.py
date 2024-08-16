@@ -211,10 +211,18 @@ class ProductResource(Resource):
         if product_id:
             product = Product.query.get(product_id)
             if product:
-                return product.to_dict(), 200
+                # Include retailer details including WhatsApp number
+                product_data = product.to_dict()
+                product_data['retailer_whatsapp'] = product.retailer.whatsapp_number if product.retailer else None
+                return product_data, 200
             return {'error': 'Product not found'}, 404
         products = Product.query.all()
-        return [product.to_dict() for product in products], 200
+        products_data = []
+        for product in products:
+            product_data = product.to_dict()
+            product_data['retailer_whatsapp'] = product.retailer.whatsapp_number if product.retailer else None
+            products_data.append(product_data)
+        return products_data, 200
 
     def post(self):
         user_id = session.get('user_id')
@@ -275,6 +283,7 @@ class ProductResource(Resource):
         db.session.commit()
         return {}, 204
 
+
 # Feedback Resource
 class FeedbackResource(Resource):
     def get(self, feedback_id=None):
@@ -304,13 +313,18 @@ class FeedbackResource(Resource):
 # Wishlist Resource
 class WishlistResource(Resource):
     def get(self, wishlist_id=None):
+        user_id = session.get('user_id')
+        if not user_id:
+            return {'error': 'Unauthorized'}, 401
+
         if wishlist_id:
             wishlist = Wishlist.query.get(wishlist_id)
-            if wishlist:
+            if wishlist and wishlist.user_id == user_id:
                 return wishlist.to_dict(), 200
             return {'error': 'Wishlist item not found'}, 404
-        wishlists = Wishlist.query.all()
+        wishlists = Wishlist.query.filter_by(user_id=user_id).all()
         return [wishlist.to_dict() for wishlist in wishlists], 200
+
 
     def post(self):
         user_id = session.get('user_id')
@@ -318,23 +332,53 @@ class WishlistResource(Resource):
             return {'error': 'Unauthorized'}, 401
 
         data = request.get_json()
+        product_id = data.get('product_id')
+        if not product_id:
+            return {'error': 'Product ID is required'}, 400
+
+        wishlist_item = Wishlist.query.filter_by(user_id=user_id, product_id=product_id).first()
+        if wishlist_item:
+            return {'error': 'Product is already in the wishlist'}, 400
+
         new_wishlist_item = Wishlist(
             user_id=user_id,
-            product_id=data['product_id']
+            product_id=product_id
         )
         db.session.add(new_wishlist_item)
         db.session.commit()
         return new_wishlist_item.to_dict(), 201
+    
+    def delete(self, wishlist_id):
+        user_id = session.get('user_id')
+        if not user_id:
+            return {'error': 'Unauthorized'}, 401
+
+        wishlist_item = Wishlist.query.get(wishlist_id)
+        if not wishlist_item or wishlist_item.user_id != user_id:
+            return {'error': 'Wishlist item not found'}, 404
+
+        db.session.delete(wishlist_item)
+        db.session.commit()
+        return {'message': 'Item removed from wishlist'}, 200
+
 
 # Message Resource
 class MessageResource(Resource):
     def get(self, message_id=None):
+        user_id = session.get('user_id')
+        if not user_id:
+            return {'error': 'Unauthorized'}, 401
+
         if message_id:
             message = Message.query.get(message_id)
-            if message:
+            if message and (message.sender_id == user_id or message.receiver_id == user_id):
                 return message.to_dict(), 200
-            return {'error': 'Message not found'}, 404
-        messages = Message.query.all()
+            return {'error': 'Message not found or unauthorized access'}, 404
+
+        messages = Message.query.filter(
+            (Message.sender_id == user_id) | (Message.receiver_id == user_id)
+        ).all()
+
         return [message.to_dict() for message in messages], 200
 
     def post(self):
@@ -353,6 +397,7 @@ class MessageResource(Resource):
         db.session.add(new_message)
         db.session.commit()
         return new_message.to_dict(), 201
+
 
 # Dashboard for Admin
 class AdminDashboard(Resource):
@@ -555,6 +600,20 @@ class SearchHistoryResource(Resource):
         search_history = UserHistory.query.filter_by(user_id=user_id).order_by(UserHistory.searched_at.desc()).all()
         return [history.to_dict() for history in search_history], 200
 
+class RetailerMessagesResource(Resource):
+    def get(self):
+        user_id = session.get('user_id')
+        if not user_id:
+            return {'error': 'Unauthorized'}, 401
+
+        user = User.query.get(user_id)
+        if not user.is_retailer:
+            return {'error': 'Only retailers can access this'}, 403
+
+        messages = Message.query.filter_by(retailer_id=user.retailer.id).all()
+        return [message.to_dict() for message in messages], 200
+
+
 # Register resources with the API
 api.add_resource(Signup, '/signup')
 api.add_resource(Login, '/login')
@@ -576,6 +635,9 @@ api.add_resource(NotificationResource, '/notifications')
 api.add_resource(RejectRetailer, '/reject_retailer/<int:retailer_id>')
 api.add_resource(SearchProductsResource, '/search/<string:query>')
 api.add_resource(SearchHistoryResource, '/search_history')
+api.add_resource(RetailerMessagesResource, '/retailer_messages')
+
+
 
 @main.route('/')
 def index():
