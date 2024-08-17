@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 from app import create_app, db
-from app.models import User, Product, Category  # Ensure Category model is imported
+from app.models import User, Product, Category
 from werkzeug.security import generate_password_hash
 
 # User data (including admin3 details)

@@ -5,6 +5,7 @@ from datetime import datetime
 from .models import db, User, Retailer, Category, Product, Feedback, UserHistory, Message, Wishlist, Notification
 import os
 from sqlalchemy.exc import IntegrityError
+from werkzeug.security import check_password_hash
 
 main = Blueprint('main', __name__)
 api = Api(main)
