@@ -89,6 +89,7 @@ def seed_users():
                 )
                 db.session.add(new_user)
         
+        
         # Seed products
         for product in product_data:
             existing_product = Product.query.filter_by(id=product['id']).first()
