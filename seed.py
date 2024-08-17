@@ -31,7 +31,7 @@ product_data = [
         "description": "500 Gb ROM 8GB RAM",
         "delivery_cost": 150,
         "payment_mode": "After Delivery",
-        "retailer_id": 2,
+        "retailer_id": 9,  # Assigned to retailer Monroe
         "category_id": 1,  # Electronics
         "created_at": "2024-08-08T22:32:17.783080",
         "image_url": "https://images.pexels.com/photos/25589787/pexels-photo-25589787/free-photo-of-laptop-with-blank-screen.jpeg?auto=compress&cs=tinysrgb&w=600",
@@ -43,12 +43,12 @@ product_data = [
         "description": "Best Affordable phone",
         "delivery_cost": 350,
         "payment_mode": "After Delivery",
-        "retailer_id": 2,
+        "retailer_id": 11,  # Assigned to retailer Mason
         "category_id": 1,  # Electronics
         "created_at": "2024-08-08T23:53:54.469201",
         "image_url": "https://images.pexels.com/photos/50614/pexels-photo-50614.jpeg?auto=compress&cs=tinysrgb&w=600",
     },
-    # Add more products if needed
+    # Add more products and assign them to one of the retailers
 ]
 
 def seed_users():
