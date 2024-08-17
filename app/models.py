@@ -115,14 +115,18 @@ class Product(db.Model, SerializerMixin):
             'category_id': self.category_id,
             'created_at': self.created_at.isoformat(),
             'image_url': self.image_url,
-            'retailer_name': self.retailer.name,
-            'retailer_user_id': self.retailer.user_id  
+            'retailer_name': self.retailer.name if self.retailer else 'Unknown',
+            'retailer_user_id': self.retailer.user_id if self.retailer else None  
         }
 
     def calculate_cost_benefit(self):
         total_cost = self.price + (self.delivery_cost or 0)
         benefit = self.estimated_value if self.estimated_value is not None else 0
         return benefit / total_cost if total_cost > 0 else 0
+
+    def calculate_marginal_benefit(self):
+        total_cost = self.price + (self.delivery_cost or 0)
+        return self.marginal_benefit / total_cost if total_cost > 0 else 0
 
     def calculate_marginal_benefit(self):
         total_cost = self.price + (self.delivery_cost or 0)
