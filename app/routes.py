@@ -20,6 +20,9 @@ admin_emails = {
 class Signup(Resource):
     def post(self):
         data = request.get_json()
+        email = data.get('email')
+        username = data.get('username')
+        password = data.get('password')
 
         if not data.get('email'):
             return {'error': 'Email is required'}, 400
