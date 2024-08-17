@@ -9,7 +9,7 @@ user_data = [
     {"id": 9, "username": "Monroe", "email": "marylnmonroe@gmail.com", "is_retailer": True, "is_admin": False, "created_at": "2024-08-08T17:19:43.960850", "password": "1010"},
     {"id": 11, "username": "Mason", "email": "mason@gmail.com", "is_retailer": True, "is_admin": False, "created_at": "2024-08-08T17:31:10.303426", "password": "1010"},
     {"id": 12, "username": "Jena", "email": "kendal.jena@gmail.com", "is_retailer": True, "is_admin": False, "created_at": "2024-08-08T18:19:19.564290", "password": "1010"},
-    {"id": 13, "username": "admin3", "email": "admin3@gmail.com", "is_retailer": False, "is_admin": True, "created_at": "2024-08-10T10:00:00.000000", "password": "adminpassword"},
+    {"id": 13, "username": "admin3", "email": "admin3@example.com", "is_retailer": False, "is_admin": True, "created_at": "2024-08-10T10:00:00.000000", "password": "adminpassword"},
 ]
 
 # Category data
@@ -19,7 +19,6 @@ category_data = [
     {"id": 3, "name": "Home Appliances"},
     {"id": 4, "name": "Books"},
     {"id": 5, "name": "Health & Beauty"},
-    # Add more categories if needed
 ]
 
 # Product data (with category_id 1 assigned to Electronics)
@@ -48,7 +47,6 @@ product_data = [
         "created_at": "2024-08-08T23:53:54.469201",
         "image_url": "https://images.pexels.com/photos/50614/pexels-photo-50614.jpeg?auto=compress&cs=tinysrgb&w=600",
     },
-    # Add more products and assign them to one of the retailers
 ]
 
 def seed_users():
