@@ -15,6 +15,7 @@ Flask-Cors==4.0.1
 Flask-Migrate==4.0.7
 Flask-RESTful==0.3.10
 Flask-Script==2.0.6
+Flask-Session
 Flask-SQLAlchemy==3.1.1
 greenlet==3.0.3
 gunicorn==22.0.0
