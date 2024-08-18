@@ -10,6 +10,9 @@ user_data = [
     {"id": 11, "username": "Mason", "email": "mason@gmail.com", "is_retailer": True, "is_admin": False, "created_at": "2024-08-08T17:31:10.303426", "password": "1010"},
     {"id": 12, "username": "Jena", "email": "kendal.jena@gmail.com", "is_retailer": True, "is_admin": False, "created_at": "2024-08-08T18:19:19.564290", "password": "1010"},
     {"id": 13, "username": "admin3", "email": "admin3@example.com", "is_retailer": False, "is_admin": True, "created_at": "2024-08-10T10:00:00.000000", "password": "adminpassword"},
+    {"id": 13, "username": "Kelly", "email": "kellyainea99@gmail.com", "is_retailer": False, "is_admin": True, "created_at": "2024-08-10T10:00:00.000000", "password": "kelly_wanyama"},
+    {"id": 13, "username": "Maggie", "email": "karurimargaret@gmail.com", "is_retailer": False, "is_admin": True, "created_at": "2024-08-10T10:00:00.000000", "password": "1010"},
+    
 ]
 
 # Category data
