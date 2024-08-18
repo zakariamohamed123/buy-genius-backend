@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 from app import create_app, db
 from app.models import User, Product, Category
-from werkzeug.security import generate_password_hash
+import bcrypt
 
 # User data (including admin3 details)
 user_data = [
@@ -76,7 +76,7 @@ def seed_users():
                 existing_user.is_retailer = user['is_retailer']
                 existing_user.is_admin = user['is_admin']
                 existing_user.created_at = datetime.fromisoformat(user['created_at'])
-                existing_user.password = generate_password_hash(user['password'])
+                existing_user.password_hash = bcrypt.hashpw(user['password'].encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
             else:
                 new_user = User(
                     id=user['id'],
@@ -85,7 +85,7 @@ def seed_users():
                     is_retailer=user['is_retailer'],
                     is_admin=user['is_admin'],
                     created_at=datetime.fromisoformat(user['created_at']),
-                    password=generate_password_hash(user['password'])
+                    password_hash=bcrypt.hashpw(user['password'].encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
                 )
                 db.session.add(new_user)
         
