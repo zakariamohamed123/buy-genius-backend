@@ -1,6 +1,6 @@
 # Buy Genius Backend
 
-Welcome to the backend service of **Buy Genius**, an e-commerce platform designed to help users compute the marginal benefit and cost-benefit analysis of products from different retailers.
+Welcome to the backend service of **Buy Genius**, a shoppers assistant platform designed to help users compute the marginal benefit and cost-benefit analysis of products from different retailers.
 
 ## Table of Contents
 - [Overview](#overview)
