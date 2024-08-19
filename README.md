@@ -78,7 +78,7 @@ The **Buy Genius Backend** is a RESTful API built with Python Flask. It manages 
 1. **Clone the repository**:
 
    ```bash
-   git clone https://github.com/yourusername/buy-genius-backend.git
+   git clone git@github.com:zakariamohamed123/buy-genius-backend.git
    cd buy-genius-backend
    ```
 
