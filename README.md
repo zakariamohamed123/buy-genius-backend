@@ -77,21 +77,21 @@ The **Buy Genius Backend** is a RESTful API built with Python Flask. It manages 
 
 1. **Clone the repository**:
 
-   ```bash
+   
    git clone git@github.com:zakariamohamed123/buy-genius-backend.git
    cd buy-genius-backend
    ```
 
 2. **Create a virtual environment**:
 
-   ```bash
+   
    python3 -m venv venv
    source venv/bin/activate
    ```
 
 3. **Install dependencies**:
 
-   ```bash
+   
    pip install -r requirements.txt
    ```
 
@@ -99,19 +99,11 @@ The **Buy Genius Backend** is a RESTful API built with Python Flask. It manages 
 
    Ensure PostgreSQL is running and create a database:
 
-   ```bash
+   
    createdb buygenius
    ```
 
-## Environment Variables
 
-Create a `.env` file in the project root and add the following:
-
-```bash
-FLASK_ENV=development
-DATABASE_URL=postgresql://buygeniususer:securepassword@localhost/buygenius
-SECRET_KEY=your_secret_key
-```
 
 ## Database
 Our database is deployed at: [https://buy-genius-backend.onrender.com]
@@ -120,13 +112,13 @@ This project uses **Flask-Migrate** for database migrations. After setting up yo
 
 1. **Create migration**:
 
-   ```bash
+   
    flask db migrate -m "Initial migration"
    ```
 
 2. **Apply migration**:
 
-   ```bash
+   
    flask db upgrade
    ```
 
@@ -134,7 +126,6 @@ This project uses **Flask-Migrate** for database migrations. After setting up yo
 
 To run the Flask development server:
 
-```bash
 flask run
 ```
 
@@ -144,7 +135,7 @@ The backend will be available at `http://127.0.0.1:5000`.
 
 To run the tests:
 
-```bash
+
 pytest
 ```
 
