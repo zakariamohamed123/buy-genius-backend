@@ -1,128 +1,115 @@
-import json
-from datetime import datetime
 from app import create_app, db
-from app.models import User, Product, Category
-import bcrypt
+from app.models import User, Retailer, Category, Product
 
-# User data (including admin3 details)
-user_data = [
-    {"id": 9, "username": "Monroe", "email": "marylnmonroe@gmail.com", "is_retailer": True, "is_admin": False, "created_at": "2024-08-08T17:19:43.960850", "password": "1010"},
-    {"id": 11, "username": "Mason", "email": "mason@gmail.com", "is_retailer": True, "is_admin": False, "created_at": "2024-08-08T17:31:10.303426", "password": "1010"},
-    {"id": 12, "username": "Jena", "email": "kendal.jena@gmail.com", "is_retailer": True, "is_admin": False, "created_at": "2024-08-08T18:19:19.564290", "password": "1010"},
-    {"id": 13, "username": "admin3", "email": "admin3@example.com", "is_retailer": False, "is_admin": True, "created_at": "2024-08-10T10:00:00.000000", "password": "adminpassword"},
-    {"id": 14, "username": "Kelly", "email": "kellyainea99@gmail.com", "is_retailer": False, "is_admin": True, "created_at": "2024-08-10T10:00:00.000000", "password": "kellywanyama"},
-    {"id": 15, "username": "Maggie", "email": "karurimargaret@gmail.com", "is_retailer": False, "is_admin": True, "created_at": "2024-08-10T10:00:00.000000", "password": "1010"},
-    
-]
+from datetime import datetime
 
-# Category data
-category_data = [
-    {"id": 1, "name": "Electronics"},
-    {"id": 2, "name": "Fashion"},
-    {"id": 3, "name": "Home Appliances"},
-    {"id": 4, "name": "Books"},
-    {"id": 5, "name": "Health & Beauty"},
-]
+# Initialize the Flask app using the factory
+app = create_app()
 
-# Product data (with category_id 1 assigned to Electronics)
-product_data = [
-    {
-        "id": 73,
-        "name": "Lenovo Laptop",
-        "price": 85000,
-        "description": "500 Gb ROM 8GB RAM",
-        "delivery_cost": 150,
-        "payment_mode": "After Delivery",
-        "retailer_id": 9,  # Assigned to retailer Monroe
-        "category_id": 1,  # Electronics
-        "created_at": "2024-08-08T22:32:17.783080",
-        "image_url": "https://images.pexels.com/photos/25589787/pexels-photo-25589787/free-photo-of-laptop-with-blank-screen.jpeg?auto=compress&cs=tinysrgb&w=600",
-    },
-    {
-        "id": 74,
-        "name": "Samsung S24 ultra",
-        "price": 70000,
-        "description": "Best Affordable phone",
-        "delivery_cost": 350,
-        "payment_mode": "After Delivery",
-        "retailer_id": 11,  # Assigned to retailer Mason
-        "category_id": 1,  # Electronics
-        "created_at": "2024-08-08T23:53:54.469201",
-        "image_url": "https://images.pexels.com/photos/50614/pexels-photo-50614.jpeg?auto=compress&cs=tinysrgb&w=600",
-    },
-]
-
-def seed_users():
-    app = create_app()
-    
+def seed_data():
     with app.app_context():
-        # Seed categories
-        for category in category_data:
-            existing_category = Category.query.filter_by(id=category['id']).first()
-            
-            if existing_category:
-                existing_category.name = category['name']
-            else:
-                new_category = Category(
-                    id=category['id'],
-                    name=category['name']
-                )
-                db.session.add(new_category)
-        
-        # Seed users
-        for user in user_data:
-            existing_user = User.query.filter_by(id=user['id']).first()
-            
-            if existing_user:
-                existing_user.username = user['username']
-                existing_user.email = user['email']
-                existing_user.is_retailer = user['is_retailer']
-                existing_user.is_admin = user['is_admin']
-                existing_user.created_at = datetime.fromisoformat(user['created_at'])
-                existing_user.password_hash = bcrypt.hashpw(user['password'].encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-            else:
-                new_user = User(
-                    id=user['id'],
-                    username=user['username'],
-                    email=user['email'],
-                    is_retailer=user['is_retailer'],
-                    is_admin=user['is_admin'],
-                    created_at=datetime.fromisoformat(user['created_at']),
-                    password_hash=bcrypt.hashpw(user['password'].encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-                )
-                db.session.add(new_user)
-        
-        
-        # Seed products
-        for product in product_data:
-            existing_product = Product.query.filter_by(id=product['id']).first()
-            
-            if existing_product:
-                existing_product.name = product['name']
-                existing_product.price = product['price']
-                existing_product.description = product['description']
-                existing_product.delivery_cost = product['delivery_cost']
-                existing_product.payment_mode = product['payment_mode']
-                existing_product.retailer_id = product['retailer_id']
-                existing_product.category_id = product['category_id']
-                existing_product.created_at = datetime.fromisoformat(product['created_at'])
-                existing_product.image_url = product['image_url']
-            else:
-                new_product = Product(
-                    id=product['id'],
-                    name=product['name'],
-                    price=product['price'],
-                    description=product['description'],
-                    delivery_cost=product['delivery_cost'],
-                    payment_mode=product['payment_mode'],
-                    retailer_id=product['retailer_id'],
-                    category_id=product['category_id'],
-                    created_at=datetime.fromisoformat(product['created_at']),
-                    image_url=product['image_url']
-                )
-                db.session.add(new_product)
+        # Clear existing data
+        db.drop_all()
+        db.create_all()
 
+        # Create categories
+        electronics = Category(name="Electronics")
+        fashion = Category(name="Fashion")
+        home = Category(name="Home & Kitchen")
+        db.session.add_all([electronics, fashion, home])
         db.session.commit()
 
+        # Create admin user
+        admin = User(
+            username="admin",
+            email="admin@buygenius.com",
+            is_admin=True
+        )
+        admin.password = "admin123"
+        db.session.add(admin)
+        db.session.commit()
+
+        # Create retailers (vendors)
+        vendors = [
+            {"name": "Naivas Supermarket", "whatsapp": "+254712345678"},
+            {"name": "Jumia Kenya", "whatsapp": "+254712345679"},
+            {"name": "Amazon Global", "whatsapp": "+15417543010"},
+            {"name": "Kilimall Kenya", "whatsapp": "+254712345680"},
+            {"name": "Souq UAE", "whatsapp": "+971501234567"}
+        ]
+
+        retailers = []
+        for i, vendor in enumerate(vendors):
+            user = User(
+                username=f"vendor{i+1}",
+                email=f"vendor{i+1}@example.com",
+                is_retailer=True
+            )
+            user.password = "vendor123"
+            db.session.add(user)
+            db.session.flush()
+            
+            retailer = Retailer(
+                name=vendor["name"],
+                user_id=user.id,
+                whatsapp_number=vendor["whatsapp"],
+                approved=True
+            )
+            db.session.add(retailer)
+            retailers.append(retailer)
+        
+        db.session.commit()
+
+        # Create sample products
+        products_data = [
+            {
+                "name": "Samsung Galaxy S23",
+                "category": electronics,
+                "variants": [
+                    {"price": 115000, "delivery": 500, "value": 125000, "marginal": 0.15, "retailer": retailers[1]},
+                    {"price": 120000, "delivery": 0, "value": 130000, "marginal": 0.12, "retailer": retailers[2]},
+                    {"price": 110000, "delivery": 1000, "value": 120000, "marginal": 0.10, "retailer": retailers[3]},
+                    {"price": 125000, "delivery": 800, "value": 135000, "marginal": 0.08, "retailer": retailers[4]}
+                ]
+            },
+            {
+                "name": "HP EliteBook 840",
+                "category": electronics,
+                "variants": [
+                    {"price": 95000, "delivery": 1500, "value": 105000, "marginal": 0.12, "retailer": retailers[0]},
+                    {"price": 89000, "delivery": 2000, "value": 98000, "marginal": 0.10, "retailer": retailers[1]},
+                    {"price": 110000, "delivery": 0, "value": 120000, "marginal": 0.09, "retailer": retailers[2]}
+                ]
+            },
+            {
+                "name": "Levi's 501 Original Fit",
+                "category": fashion,
+                "variants": [
+                    {"price": 4500, "delivery": 300, "value": 5000, "marginal": 0.05, "retailer": retailers[0]},
+                    {"price": 5000, "delivery": 0, "value": 5500, "marginal": 0.10, "retailer": retailers[3]},
+                    {"price": 4800, "delivery": 500, "value": 5300, "marginal": 0.04, "retailer": retailers[4]}
+                ]
+            }
+        ]
+
+        for product_data in products_data:
+            for variant in product_data["variants"]:
+                product = Product(
+                    name=product_data["name"],
+                    price=variant["price"],
+                    description=f"Brand new {product_data['name']} from {variant['retailer'].name}",
+                    delivery_cost=variant["delivery"],
+                    payment_mode="Cash/Card/M-Pesa",
+                    retailer_id=variant["retailer"].id,
+                    category_id=product_data["category"].id,
+                    estimated_value=variant["value"],
+                    marginal_benefit=variant["marginal"],
+                    image_url=f"https://example.com/images/{product_data['name'].replace(' ', '-').lower()}.jpg"
+                )
+                db.session.add(product)
+        
+        db.session.commit()
+        print("✅ Database seeded successfully!")
+
 if __name__ == "__main__":
-    seed_users()
+    seed_data()
